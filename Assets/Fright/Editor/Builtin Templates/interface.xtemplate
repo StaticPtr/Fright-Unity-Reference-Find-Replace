@@ -1,0 +1,15 @@
+<template id="Interface" format="1.0.0.0" priority="-197">
+	<build-option name="Filename" type="string" replacement="filename" default="InterfaceName" />
+	<build-option name="Namespace" type="string" replacement="namespace" default="" required="false"/>
+
+	<using id="System.Collections" optional="true" default="true" />
+	<using id="System.Collections.Generic" optional="true" default="true" />
+	<using id="UnityEngine" optional="true" default="false" />
+
+	<br />
+	<namespace id="{namespace}">
+		<interface id="{filename}" access="public">
+//...
+		</interface>
+	</namespace>
+</template>

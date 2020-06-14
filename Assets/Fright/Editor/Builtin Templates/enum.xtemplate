@@ -1,0 +1,15 @@
+<template id="Enum" format="1.0.0.0" priority="-196">
+	<build-option name="Filename" type="string" replacement="filename" default="EnumName" />
+	<build-option name="Namespace" type="string" replacement="namespace" default="" required="false" />
+
+	<using id="System.Collections" optional="true" default="true" />
+	<using id="System.Collections.Generic" optional="true" default="true" />
+	<using id="UnityEngine" optional="true" default="false" />
+
+	<br />
+	<namespace id="{namespace}">
+		<enum id="{filename}" access="public">
+//...
+		</enum>
+	</namespace>
+</template>

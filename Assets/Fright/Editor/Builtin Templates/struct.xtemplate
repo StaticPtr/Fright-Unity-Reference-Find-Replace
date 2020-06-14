@@ -1,0 +1,15 @@
+<template id="Struct" format="1.0.0.0" priority="-198">
+	<build-option name="Filename" type="string" replacement="filename" default="StructName" />
+	<build-option name="Namespace" type="string" replacement="namespace" default="" required="false"/>
+
+	<using id="System.Collections" optional="true" default="true" />
+	<using id="System.Collections.Generic" optional="true" default="true" />
+	<using id="UnityEngine" optional="true" default="false" />
+
+	<br />
+	<namespace id="{namespace}">
+		<struct id="{filename}" access="public">
+//...
+		</struct>
+	</namespace>
+</template>
