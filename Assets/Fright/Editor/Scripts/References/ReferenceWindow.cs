@@ -7,6 +7,8 @@ namespace Fright.Editor.References
 {
 	public class ReferenceWindow : EditorWindow
 	{
+		public Object objectToFind;
+		public Object objectToReplace;
 		private ReferenceQuery query = new ReferenceQuery();
 		
 		[MenuItem("Fright/References")]
@@ -27,7 +29,8 @@ namespace Fright.Editor.References
 				//Draw the object selector
 				EditorGUI.BeginChangeCheck();
 				{
-					query.objectToFind = EditorGUILayout.ObjectField("Object To Find", query.objectToFind, typeof(Object), false);
+					objectToFind = EditorGUILayout.ObjectField("Object To Find", objectToFind, typeof(Object), false);
+					objectToReplace = EditorGUILayout.ObjectField("Object To Replace", objectToReplace, typeof(Object), false);
 				}
 				if (EditorGUI.EndChangeCheck())
 				{
@@ -36,12 +39,12 @@ namespace Fright.Editor.References
 				EditorGUILayout.Space();
 				
 				//Draw the object details
-				if (query.objectToFind)
+				if (objectToFind)
 				{
 					EditorGUILayout.LabelField("Details", EditorStyles.boldLabel);
-					EditorGUILayout.TextField("Type", query.objectToFind.GetType().Name);
-					EditorGUILayout.TextField("GUID", query.guid);
-					EditorGUILayout.TextField("Subasset", AssetDatabase.IsMainAsset(query.objectToFind) ? "No" : "Yes");
+					EditorGUILayout.TextField("Type", objectToFind.GetType().Name);
+					EditorGUILayout.TextField("GUID", ReferenceQuery.GetObjectGUID(objectToFind));
+					EditorGUILayout.TextField("Subasset", AssetDatabase.IsMainAsset(objectToFind) ? "No" : "Yes");
 				}
 				else
 				{
@@ -53,20 +56,34 @@ namespace Fright.Editor.References
 
 		private void DrawSearchPanel()
 		{
-			GUI.enabled = (bool)query.objectToFind;
+			GUI.enabled = (bool)objectToFind;
 
-			if (query?.objectToFind == null || AssetDatabase.IsMainAsset(query.objectToFind))
+			if (objectToFind == null || AssetDatabase.IsMainAsset(objectToFind))
 			{
 				if (GUILayout.Button("Search For Asset"))
 				{
-					query.FindReferences();
+					query.FindReferences(objectToFind);
+				}
+
+				GUI.enabled &= query.referencingPaths?.Count > 0 && objectToReplace;
+
+				if (GUILayout.Button("Replace Asset"))
+				{
+					query.ReplaceReferences(objectToFind, objectToReplace);
 				}
 			}
 			else
 			{
 				if (GUILayout.Button("Search For Sub Asset"))
 				{
-					query.FindReferences(ReferenceQuery.RegexForSubAsset(query.objectToFind));
+					query.FindReferences(ReferenceQuery.RegexForSubAsset(objectToFind));
+				}
+
+				GUI.enabled &= query.referencingPaths?.Count > 0 && objectToReplace;
+
+				if (GUILayout.Button("Replace Asset"))
+				{
+					query.ReplaceReferences(ReferenceQuery.RegexForSubAsset(objectToFind), ReferenceQuery.RegexForSubAsset(objectToReplace));
 				}
 			}
 			

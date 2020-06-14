@@ -16,8 +16,6 @@ namespace Fright.Editor.References
 		private const string PROG_BAR_TITLE_FINDING = "Finding References";
 
 		//Inputs
-		public Object objectToFind = null;
-		public string guid => GetObjectGUID(objectToFind);
 		public string rootFolderToSearch = "Assets";
 		public List<string> extensionsToSearch = new List<string>()
 		{
@@ -31,7 +29,7 @@ namespace Fright.Editor.References
 		public List<string> referencingPaths = null;
 		
 		/// Finds all the references to the object using the default object regex
-		public void FindReferences() => FindReferences(RegexForAsset(objectToFind));
+		public void FindReferences(Object objectToFind) => FindReferences(RegexForAsset(objectToFind));
 
 		/// Finds all the references to the object using the provided regex
 		public void FindReferences(string regex)
@@ -49,6 +47,41 @@ namespace Fright.Editor.References
 			finally
 			{
 				EditorUtility.ClearProgressBar();
+			}
+		}
+
+		/// Replaces any already found references using the provided regex and replacement
+		public void ReplaceReferences(Object objectToFind, Object objectToReplace) => ReplaceReferences(RegexForAsset(objectToFind), RegexForAsset(objectToReplace));
+
+		/// Replaces any already found references using the provided regex and replacement
+		public void ReplaceReferences(string regex, string replacement)
+		{
+			try
+			{
+				Regex searchRegex = new Regex(regex, RegexOptions.Compiled);
+				
+				for(int i = 0; i < referencingPaths.Count; ++i)
+				{
+					string path = referencingPaths[i];
+
+					if (!EditorUtility.DisplayCancelableProgressBar(PROG_BAR_TITLE_FINDING, path, (float)i / (float)referencingPaths.Count))
+					{
+						string text = File.ReadAllText(path);
+						text = searchRegex.Replace(text, replacement);
+						File.WriteAllText(path, text);
+					}
+					else
+					{
+						Debug.LogError("[ReferenceQuery] Request cancelled by user");
+						break;
+					}
+				}
+			}
+			finally
+			{
+				EditorUtility.ClearProgressBar();
+				AssetDatabase.Refresh();
+				referencingPaths = null;
 			}
 		}
 
@@ -92,12 +125,12 @@ namespace Fright.Editor.References
 
 		#region Static Functions
 		public static string GetObjectGUID(Object obj) => AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(obj));
-		public static string RegexForAsset(Object obj) => $"guid: ({GetObjectGUID(obj)})";
+		public static string RegexForAsset(Object obj) => $"guid: {GetObjectGUID(obj)}";
 		public static string RegexForSubAsset(Object obj)
 		{
 			if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(obj, out string guid, out long localID))
 			{
-				return $"fileID: ({localID}), guid: ({guid})";
+				return $"fileID: {localID}, guid: {guid}";
 			}
 			return RegexForAsset(obj);
 		}
