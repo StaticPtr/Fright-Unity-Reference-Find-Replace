@@ -31,6 +31,7 @@ namespace Fright.Editor.References
 	{
 		public Object objectToFind;
 		public Object objectToReplace;
+		public Vector2 scrollPosition;
 		private ReferenceQuery query = new ReferenceQuery();
 		
 		[MenuItem("Window/Asset References")]
@@ -39,9 +40,14 @@ namespace Fright.Editor.References
 		public void OnGUI()
 		{
 			titleContent.text = "References";
-			DrawObjectToSelect();
-			DrawSearchPanel();
-			DrawReferences();
+
+			scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+			{
+				DrawObjectToSelect();
+				DrawSearchPanel();
+				DrawReferences();
+			}
+			EditorGUILayout.EndScrollView();
 		}
 
 		private void DrawObjectToSelect()
