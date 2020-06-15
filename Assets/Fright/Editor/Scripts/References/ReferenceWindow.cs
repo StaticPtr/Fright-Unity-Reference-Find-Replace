@@ -33,7 +33,7 @@ namespace Fright.Editor.References
 		public Object objectToReplace;
 		private ReferenceQuery query = new ReferenceQuery();
 		
-		[MenuItem("Fright/References")]
+		[MenuItem("Window/Asset References")]
 		public static void OpenWindow() => GetWindow<ReferenceWindow>().Show();
 
 		public void OnGUI()
@@ -89,7 +89,7 @@ namespace Fright.Editor.References
 
 				GUI.enabled &= query.referencingPaths?.Count > 0 && objectToReplace;
 
-				if (GUILayout.Button("Replace Asset"))
+				if (GUILayout.Button("Replace Asset") && PromptReplace())
 				{
 					query.ReplaceReferences(objectToFind, objectToReplace);
 				}
@@ -103,7 +103,7 @@ namespace Fright.Editor.References
 
 				GUI.enabled &= query.referencingPaths?.Count > 0 && objectToReplace;
 
-				if (GUILayout.Button("Replace Asset"))
+				if (GUILayout.Button("Replace Asset") && PromptReplace())
 				{
 					query.ReplaceReferences(ReferenceQuery.RegexForSubAsset(objectToFind), ReferenceQuery.RegexForSubAsset(objectToReplace));
 				}
@@ -126,11 +126,32 @@ namespace Fright.Editor.References
 					}
 					else
 					{
-						query.referencingPaths.ForEach(path => EditorGUILayout.LabelField(path));
+						var currentDirectory = new System.Uri(System.Environment.CurrentDirectory + "/Assets");
+
+						foreach(var path in query.referencingPaths)
+						{
+							EditorGUILayout.BeginHorizontal();
+							{
+								string relativePath = currentDirectory.MakeRelativeUri(new System.Uri(path)).ToString();
+								EditorGUILayout.LabelField(relativePath);
+
+								if (GUILayout.Button("Select", EditorStyles.miniButton, GUILayout.Width(60.0f)))
+								{
+									Object obj = AssetDatabase.LoadAssetAtPath<Object>(relativePath);
+									Selection.activeObject = obj;
+								}
+							}
+							EditorGUILayout.EndHorizontal();
+						}
 					}
 				}
 				EditorGUILayout.EndVertical();
 			}
+		}
+
+		private bool PromptReplace()
+		{
+			return !EditorUtility.DisplayDialog("Find and Replace", "Are you sure you want to replace all references of this asset? This process cannot be undone", "No", "Yes");
 		}
 	}
 }
