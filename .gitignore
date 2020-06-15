@@ -3,3 +3,4 @@ Library
 /*.sln
 /*.csproj
 /.vscode
+/obj
