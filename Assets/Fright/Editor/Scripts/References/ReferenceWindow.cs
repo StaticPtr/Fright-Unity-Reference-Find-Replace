@@ -58,12 +58,12 @@ namespace Fright.Editor.References
 				EditorGUI.BeginChangeCheck();
 				{
 					objectToFind = EditorGUILayout.ObjectField("Object To Find", objectToFind, typeof(Object), false);
-					objectToReplace = EditorGUILayout.ObjectField("Object To Replace", objectToReplace, typeof(Object), false);
 				}
 				if (EditorGUI.EndChangeCheck())
 				{
 					query.referencingPaths = null;
 				}
+				objectToReplace = EditorGUILayout.ObjectField("Object To Replace", objectToReplace, typeof(Object), false);
 				EditorGUILayout.Space();
 				
 				//Draw the object details
