@@ -37,6 +37,21 @@ namespace Fright.Editor.References
 		[MenuItem("Window/Asset References")]
 		public static void OpenWindow() => GetWindow<ReferenceWindow>().Show();
 
+		[MenuItem("Assets/Find References", true)]
+		public static bool CanOpenWindowWithSelectedObject() => (bool)Selection.activeObject;
+
+		[MenuItem("Assets/Find References")]
+		public static void OpenWindowWithSelectedObject()
+		{
+			var window = GetWindow<ReferenceWindow>();
+			window.Show();
+			
+			if (window.objectToFind = Selection.activeObject)
+			{
+				window.StartSearch();	
+			}
+		}
+
 		public void OnGUI()
 		{
 			titleContent.text = "References";
@@ -90,7 +105,7 @@ namespace Fright.Editor.References
 			{
 				if (GUILayout.Button("Search For Asset"))
 				{
-					query.FindReferences(objectToFind);
+					StartSearch();
 				}
 
 				GUI.enabled &= query.referencingPaths?.Count > 0 && objectToReplace;
@@ -104,7 +119,7 @@ namespace Fright.Editor.References
 			{
 				if (GUILayout.Button("Search For Sub Asset"))
 				{
-					query.FindReferences(ReferenceQuery.RegexForSubAsset(objectToFind));
+					StartSearch();
 				}
 
 				GUI.enabled &= query.referencingPaths?.Count > 0 && objectToReplace;
@@ -116,6 +131,18 @@ namespace Fright.Editor.References
 			}
 			
 			GUI.enabled = true;
+		}
+
+		private void StartSearch()
+		{
+			if (AssetDatabase.IsMainAsset(objectToFind))
+			{
+				query.FindReferences(objectToFind);
+			}
+			else
+			{
+				query.FindReferences(ReferenceQuery.RegexForSubAsset(objectToFind));
+			}
 		}
 
 		private void DrawReferences()
@@ -139,6 +166,7 @@ namespace Fright.Editor.References
 							EditorGUILayout.BeginHorizontal();
 							{
 								string relativePath = currentDirectory.MakeRelativeUri(new System.Uri(path)).ToString();
+								relativePath = System.Uri.UnescapeDataString(relativePath);
 								EditorGUILayout.LabelField(relativePath);
 
 								if (GUILayout.Button("Select", EditorStyles.miniButton, GUILayout.Width(60.0f)))
