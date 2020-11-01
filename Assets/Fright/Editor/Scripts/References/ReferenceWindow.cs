@@ -53,7 +53,8 @@ namespace Fright.Editor.References
 			
 			if (window.objectToFind = Selection.activeObject)
 			{
-				window.StartSearch();	
+				window.BuildFindRegex();
+				window.StartSearch();
 			}
 		}
 
