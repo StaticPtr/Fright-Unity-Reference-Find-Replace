@@ -29,7 +29,7 @@ namespace Fright.Editor.References
 {
 	public class ReferenceWindow : EditorWindow
 	{
-		public Object objectToFind;
+		public List<Object> objectsToFind = new List<Object>();
 		public Object objectToReplace;
 		public string regexToFind;
 		public string regexToReplace;
@@ -37,10 +37,26 @@ namespace Fright.Editor.References
 		public int currentTabView = (int)Tab.asset;
 
 		private ReferenceQuery query = new ReferenceQuery();
+		private SerializedObject serializedObject = null;
 		private string[] tabs = new string[] {"Asset", "Regex"};
+
+		public int searchableAssets
+		{
+			get
+			{
+				int result = 0;
+
+				foreach(var asset in objectsToFind)
+				{
+					if (asset) ++result;
+				}
+
+				return result;
+			}
+		}
 		
 		[MenuItem("Window/Asset References")]
-		public static void OpenWindow() => GetWindow<ReferenceWindow>().Show();
+		public static void OpenWindow() => GetWindow<ReferenceWindow>(true, "References").ShowUtility();
 
 		[MenuItem("Assets/Find References", true)]
 		public static bool CanOpenWindowWithSelectedObject() => (bool)Selection.activeObject;
@@ -48,19 +64,27 @@ namespace Fright.Editor.References
 		[MenuItem("Assets/Find References")]
 		public static void OpenWindowWithSelectedObject()
 		{
-			var window = GetWindow<ReferenceWindow>();
-			window.Show();
+			var window = GetWindow<ReferenceWindow>(true, "References");
+			window.ShowUtility();
+			window.objectsToFind = new List<Object>(Selection.objects);
 			
-			if (window.objectToFind = Selection.activeObject)
+			if (window.objectsToFind.Count > 0)
 			{
 				window.BuildFindRegex();
 				window.StartSearch();
 			}
 		}
 
+		private void OnEnable()
+		{
+			serializedObject = new SerializedObject(this);
+			BuildFindRegex();
+		}
+
 		public void OnGUI()
 		{
 			titleContent.text = "References";
+			serializedObject.UpdateIfRequiredOrScript();
 
 			DrawToolbar();
 
@@ -81,6 +105,7 @@ namespace Fright.Editor.References
 				DrawReferences();
 			}
 			EditorGUILayout.EndScrollView();
+			serializedObject.ApplyModifiedProperties();
 		}
 
 		private void DrawToolbar()
@@ -99,14 +124,23 @@ namespace Fright.Editor.References
 				//Draw the object selector
 				EditorGUI.BeginChangeCheck();
 				{
-					objectToFind = EditorGUILayout.ObjectField("Object To Find", objectToFind, typeof(Object), false);
+					EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(objectsToFind)), true);
 				}
 				if (EditorGUI.EndChangeCheck())
 				{
+					serializedObject.ApplyModifiedProperties();
+
+					if (searchableAssets > 1)
+					{
+						objectToReplace = null;
+						BuildReplaceRegex();
+					}
+
 					query.referencingPaths = null;
 					BuildFindRegex();
 				}
 
+				GUI.enabled = searchableAssets < 2;
 				EditorGUI.BeginChangeCheck();
 				{
 					objectToReplace = EditorGUILayout.ObjectField("Object To Replace", objectToReplace, typeof(Object), false);
@@ -115,17 +149,11 @@ namespace Fright.Editor.References
 				{
 					BuildReplaceRegex();
 				}
+				GUI.enabled = true;
 				EditorGUILayout.Space();
 				
-				//Draw the object details
-				if (objectToFind)
-				{
-					EditorGUILayout.LabelField("Details", EditorStyles.boldLabel);
-					EditorGUILayout.TextField("Type", objectToFind.GetType().Name);
-					EditorGUILayout.TextField("GUID", ReferenceQuery.GetObjectGUID(objectToFind));
-					EditorGUILayout.TextField("Subasset", AssetDatabase.IsMainAsset(objectToFind) ? "No" : "Yes");
-				}
-				else
+				//Draw the call to action
+				if (searchableAssets == 0)
 				{
 					EditorGUILayout.LabelField("Pick an asset to get started");
 				}
@@ -145,9 +173,9 @@ namespace Fright.Editor.References
 
 		private void BuildFindRegex()
 		{
-			if (objectToFind)
+			if (searchableAssets > 0)
 			{
-				regexToFind = AssetDatabase.IsMainAsset(objectToFind) ? ReferenceQuery.RegexForAsset(objectToFind) : ReferenceQuery.RegexForSubAsset(objectToFind);
+				regexToFind = ReferenceQuery.RegexForAssets(objectsToFind);
 			}
 			else
 			{
@@ -157,7 +185,7 @@ namespace Fright.Editor.References
 
 		private void BuildReplaceRegex()
 		{
-			if (objectToReplace)
+			if (searchableAssets == 1)
 			{
 				regexToReplace = AssetDatabase.IsMainAsset(objectToReplace) ? ReferenceQuery.RegexForAsset(objectToReplace) : ReferenceQuery.RegexForSubAsset(objectToReplace);
 			}
@@ -180,7 +208,7 @@ namespace Fright.Editor.References
 
 			if (GUILayout.Button("Replace") && PromptReplace())
 			{
-				query.ReplaceReferences(objectToFind, objectToReplace);
+				query.ReplaceReferences(objectsToFind[0], objectToReplace);
 			}
 			
 			GUI.enabled = true;

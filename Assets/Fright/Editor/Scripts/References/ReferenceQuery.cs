@@ -51,7 +51,9 @@ namespace Fright.Editor.References
 		public List<string> referencingPaths = null;
 		
 		/// Finds all the references to the object using the default object regex
-		public void FindReferences(Object objectToFind) => FindReferences(RegexForAsset(objectToFind));
+		public void FindReferences(Object objectToFind) => FindReferences(AssetDatabase.IsMainAsset(objectToFind) ? RegexForAsset(objectToFind) : RegexForSubAsset(objectToFind));
+		/// Finds all the references to the objects using the default object regex
+		public void FindReferences(IList<Object> objectsToFind) => FindReferences(RegexForAssets(objectsToFind));
 
 		/// Finds all the references to the object using the provided regex
 		public void FindReferences(string regex)
@@ -155,6 +157,34 @@ namespace Fright.Editor.References
 				return $"fileID: {localID}, guid: {guid}";
 			}
 			return RegexForAsset(obj);
+		}
+
+		public static string RegexForAssets(IList<Object> objects)
+		{
+			string allAssetsRegex = "";
+
+			//Aggregate all of the regexes for each asset to find
+			for(int i = 0; i < objects.Count; ++i)
+			{
+				Object obj = objects[i];
+
+				if (obj)
+				{
+					string singleAssetRegex = AssetDatabase.IsMainAsset(obj) ? RegexForAsset(obj) : RegexForSubAsset(obj);
+
+					if (allAssetsRegex.Length == 0)
+					{
+						allAssetsRegex = $"({singleAssetRegex})";
+					}
+					else
+					{
+						allAssetsRegex += $"|({singleAssetRegex})";
+					}
+				}
+			}
+
+			//Return the result
+			return allAssetsRegex;
 		}
 		#endregion
 	}
