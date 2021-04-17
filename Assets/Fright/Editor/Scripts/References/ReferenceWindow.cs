@@ -29,7 +29,9 @@ namespace Fright.Editor.References
 {
 	public class ReferenceWindow : EditorWindow
 	{
-		public List<Object> objectsToFind = new List<Object>();
+		public const string WARNING_MULTIPLE_REPLACE = "You're replacing references to multiple assets with a single reference.";
+
+		public List<Object> objectsToFind = new List<Object>() { null };
 		public Object objectToReplace;
 		public string regexToFind;
 		public string regexToReplace;
@@ -121,7 +123,7 @@ namespace Fright.Editor.References
 		{
 			EditorGUILayout.BeginVertical("box");
 			{
-				//Draw the object selector
+				//Draw the find objects selector
 				EditorGUI.BeginChangeCheck();
 				{
 					EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(objectsToFind)), true);
@@ -140,7 +142,7 @@ namespace Fright.Editor.References
 					BuildFindRegex();
 				}
 
-				GUI.enabled = searchableAssets < 2;
+				//Draw the replace object selector
 				EditorGUI.BeginChangeCheck();
 				{
 					objectToReplace = EditorGUILayout.ObjectField("Object To Replace", objectToReplace, typeof(Object), false);
@@ -149,8 +151,14 @@ namespace Fright.Editor.References
 				{
 					BuildReplaceRegex();
 				}
-				GUI.enabled = true;
+
 				EditorGUILayout.Space();
+
+				//Draw the multiple object replace warning
+				if (searchableAssets >= 2 && !string.IsNullOrEmpty(regexToReplace))
+				{
+					EditorGUILayout.HelpBox(WARNING_MULTIPLE_REPLACE, MessageType.Warning);
+				}
 				
 				//Draw the call to action
 				if (searchableAssets == 0)
@@ -185,14 +193,7 @@ namespace Fright.Editor.References
 
 		private void BuildReplaceRegex()
 		{
-			if (searchableAssets == 1)
-			{
-				regexToReplace = AssetDatabase.IsMainAsset(objectToReplace) ? ReferenceQuery.RegexForAsset(objectToReplace) : ReferenceQuery.RegexForSubAsset(objectToReplace);
-			}
-			else
-			{
-				regexToReplace = "";
-			}
+			regexToReplace = AssetDatabase.IsMainAsset(objectToReplace) ? ReferenceQuery.RegexForAsset(objectToReplace) : ReferenceQuery.RegexForSubAsset(objectToReplace);
 		}
 
 		private void DrawSearchPanel()
@@ -208,7 +209,7 @@ namespace Fright.Editor.References
 
 			if (GUILayout.Button("Replace") && PromptReplace())
 			{
-				query.ReplaceReferences(objectsToFind[0], objectToReplace);
+				query.ReplaceReferences(regexToFind, regexToReplace);
 			}
 			
 			GUI.enabled = true;
