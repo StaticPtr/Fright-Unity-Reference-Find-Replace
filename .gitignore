@@ -5,3 +5,5 @@ Library
 /.vscode
 /obj
 /Export
+/Logs/
+/UserSettings/
