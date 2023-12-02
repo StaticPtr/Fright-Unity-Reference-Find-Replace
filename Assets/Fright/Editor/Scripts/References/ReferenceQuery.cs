@@ -33,6 +33,7 @@ using Object = UnityEngine.Object;
 
 namespace Fright.Editor.References
 {
+	[Serializable]
 	public class ReferenceQuery
 	{
 		private const string PROG_BAR_TITLE_FINDING = "Finding References";

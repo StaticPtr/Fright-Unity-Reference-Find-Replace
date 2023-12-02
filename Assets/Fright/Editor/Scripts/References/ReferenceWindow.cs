@@ -24,6 +24,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using Codice.Client.BaseCommands;
 
 namespace Fright.Editor.References
 {
@@ -36,11 +37,11 @@ namespace Fright.Editor.References
 		public string regexToFind;
 		public string regexToReplace;
 		public Vector2 scrollPosition;
+		public bool enableReplace = true;
 		public int currentTabView = (int)Tab.asset;
 
-		private ReferenceQuery query = new ReferenceQuery();
+		[SerializeField] private ReferenceQuery query = new ReferenceQuery();
 		private SerializedObject serializedObject = null;
-		private string[] tabs = new string[] {"Asset", "Regex"};
 
 		public int searchableAssets
 		{
@@ -96,15 +97,20 @@ namespace Fright.Editor.References
 				{
 					case Tab.asset:
 						DrawObjectToSelect();
+						DrawSearchPanel();
+						DrawReferences();
 						break;
 
 					case Tab.regex:
 						DrawRegex();
+						DrawSearchPanel();
+						DrawReferences();
+						break;
+
+					case Tab.settings:
+						DrawSettings();
 						break;
 				}
-
-				DrawSearchPanel();
-				DrawReferences();
 			}
 			EditorGUILayout.EndScrollView();
 			serializedObject.ApplyModifiedProperties();
@@ -114,7 +120,20 @@ namespace Fright.Editor.References
 		{
 			EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 			{
-				currentTabView = GUILayout.SelectionGrid(currentTabView, tabs, tabs.Length, EditorStyles.toolbarButton);
+				if (GUILayout.Button("Find Asset(s)", EditorStyles.toolbarButton))
+				{
+					currentTabView = (int)Tab.asset;
+				}
+
+				if (GUILayout.Button("Find Regex", EditorStyles.toolbarButton))
+				{
+					currentTabView = (int)Tab.regex;
+				}
+
+				if (GUILayout.Button(EditorGUIUtility.IconContent("_Popup@2x"), EditorStyles.toolbarButton, GUILayout.Width(40.0f)))
+				{
+					currentTabView = (int)Tab.settings;
+				}
 			}
 			EditorGUILayout.EndHorizontal();
 		}
@@ -123,6 +142,9 @@ namespace Fright.Editor.References
 		{
 			EditorGUILayout.BeginVertical("box");
 			{
+				EditorGUILayout.LabelField("Find assets", EditorStyles.boldLabel);
+				EditorGUILayout.Space();
+
 				//Draw the find objects selector
 				EditorGUI.BeginChangeCheck();
 				{
@@ -143,21 +165,24 @@ namespace Fright.Editor.References
 				}
 
 				//Draw the replace object selector
-				EditorGUI.BeginChangeCheck();
+				if (enableReplace)
 				{
-					objectToReplace = EditorGUILayout.ObjectField("Object To Replace", objectToReplace, typeof(Object), false);
-				}
-				if (EditorGUI.EndChangeCheck())
-				{
-					BuildReplaceRegex();
-				}
+					EditorGUI.BeginChangeCheck();
+					{
+						objectToReplace = EditorGUILayout.ObjectField("Object To Replace", objectToReplace, typeof(Object), false);
+					}
+					if (EditorGUI.EndChangeCheck())
+					{
+						BuildReplaceRegex();
+					}
 
-				EditorGUILayout.Space();
+					EditorGUILayout.Space();
 
-				//Draw the multiple object replace warning
-				if (searchableAssets >= 2 && !string.IsNullOrEmpty(regexToReplace))
-				{
-					EditorGUILayout.HelpBox(WARNING_MULTIPLE_REPLACE, MessageType.Warning);
+					//Draw the multiple object replace warning
+					if (searchableAssets >= 2 && !string.IsNullOrEmpty(regexToReplace))
+					{
+						EditorGUILayout.HelpBox(WARNING_MULTIPLE_REPLACE, MessageType.Warning);
+					}
 				}
 				
 				//Draw the call to action
@@ -173,10 +198,28 @@ namespace Fright.Editor.References
 		{
 			EditorGUILayout.BeginVertical("box");
 			{
-				regexToFind = EditorGUILayout.TextField("Find", regexToFind);
-				regexToReplace = EditorGUILayout.TextField("Replace", regexToReplace);
+				EditorGUILayout.LabelField("Find with regular expression", EditorStyles.boldLabel);
+				EditorGUILayout.Space();
+
+				regexToFind = EditorGUILayout.TextField("Find Regex", regexToFind);
+
+				if (enableReplace)
+				{
+					regexToReplace = EditorGUILayout.TextField("Replace Regex", regexToReplace);
+				}
 			}
 			EditorGUILayout.EndVertical();
+		}
+
+		private void DrawSettings()
+		{
+			EditorGUILayout.Space();
+			enableReplace = EditorGUILayout.Toggle("Enable Replace", enableReplace);
+			
+			EditorGUILayout.Space();
+			EditorGUILayout.HelpBox("Changing the extensions searched will affect how long the search operation takes.", MessageType.Warning);
+			var extensionsToSearch = serializedObject.FindProperty("query").FindPropertyRelative(nameof(ReferenceQuery.extensionsToSearch));
+			EditorGUILayout.PropertyField(extensionsToSearch);
 		}
 
 		private void BuildFindRegex()
@@ -193,25 +236,43 @@ namespace Fright.Editor.References
 
 		private void BuildReplaceRegex()
 		{
+			if (!objectToReplace)
+			{
+				regexToReplace = string.Empty;
+				return;
+			}
+
 			regexToReplace = AssetDatabase.IsMainAsset(objectToReplace) ? ReferenceQuery.RegexForAsset(objectToReplace) : ReferenceQuery.RegexForSubAsset(objectToReplace);
 		}
 
 		private void DrawSearchPanel()
 		{
 			GUI.enabled = !string.IsNullOrEmpty(regexToFind);
+			EditorGUILayout.BeginHorizontal();
 
-			if (GUILayout.Button("Find"))
+			if (enableReplace)
 			{
-				StartSearch();
+				if (GUILayout.Button("Find", EditorStyles.miniButtonLeft))
+				{
+					StartSearch();
+				}
+
+				GUI.enabled &= query.referencingPaths?.Count > 0 && !string.IsNullOrEmpty(regexToReplace);
+
+				if (GUILayout.Button("Replace", EditorStyles.miniButtonRight) && PromptReplace())
+				{
+					query.ReplaceReferences(regexToFind, regexToReplace);
+				}
 			}
-
-			GUI.enabled &= query.referencingPaths?.Count > 0 && !string.IsNullOrEmpty(regexToReplace);
-
-			if (GUILayout.Button("Replace") && PromptReplace())
+			else
 			{
-				query.ReplaceReferences(regexToFind, regexToReplace);
+				if (GUILayout.Button("Find"))
+				{
+					StartSearch();
+				}
 			}
 			
+			EditorGUILayout.EndHorizontal();
 			GUI.enabled = true;
 		}
 
@@ -268,6 +329,7 @@ namespace Fright.Editor.References
 		{
 			asset = 0,
 			regex = 1,
+			settings = 2,
 		}
 		#endregion
 	}
