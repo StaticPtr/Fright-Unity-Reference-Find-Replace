@@ -1,0 +1,4 @@
+#'Enables nullable aware context'
+-nullable:enable
+#'Turns all warnings into errors'
+-warnaserror+

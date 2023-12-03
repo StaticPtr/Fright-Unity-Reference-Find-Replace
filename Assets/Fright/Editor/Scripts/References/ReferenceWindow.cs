@@ -34,16 +34,16 @@ namespace Fright.Editor.References
 		public const string WARNING_RESET_BODY = "Are you sure you want to reset your settings to their default value?";
 		public const string WARNING_EXTENSIONS_TIME = "Changing the extensions searched will affect how long the search operation takes.";
 
-		public List<Object> ObjectsToFind = new List<Object>() { null };
-		public Object ObjectToReplace;
-		public string RegexToFind;
-		public string RegexToReplace;
-		public Vector2 ScrollPosition;
+		public List<Object?> ObjectsToFind = new List<Object?>() { null };
+		public Object? ObjectToReplace;
+		public string RegexToFind = string.Empty;
+		public string RegexToReplace = string.Empty;
+		public Vector2 ScrollPosition = default;
 		public Tab CurrentTabView = Tab.Asset;
 
 		[SerializeField] private ReferenceQuery Query = new ReferenceQuery();
 		[SerializeField] private QueryWindowSettings Settings = new QueryWindowSettings();
-		private SerializedObject SerializedObject = null;
+		private SerializedObject? SerializedObject = null;
 
 		public int SearchableAssets
 		{
@@ -74,7 +74,7 @@ namespace Fright.Editor.References
 		{
 			var window = GetWindow<ReferenceWindow>(true, "References");
 			window.ShowUtility();
-			window.ObjectsToFind = new List<Object>(Selection.objects);
+			window.ObjectsToFind = new List<Object?>(Selection.objects);
 			
 			if (window.ObjectsToFind.Count > 0)
 			{
@@ -99,7 +99,7 @@ namespace Fright.Editor.References
 		public void OnGUI()
 		{
 			titleContent.text = "References";
-			SerializedObject.UpdateIfRequiredOrScript();
+			SerializedObject!.UpdateIfRequiredOrScript();
 
 			DrawToolbar();
 
@@ -160,7 +160,7 @@ namespace Fright.Editor.References
 				//Draw the find objects selector
 				EditorGUI.BeginChangeCheck();
 				{
-					EditorGUILayout.PropertyField(SerializedObject.FindProperty(nameof(ObjectsToFind)), true);
+					EditorGUILayout.PropertyField(SerializedObject!.FindProperty(nameof(ObjectsToFind)), true);
 				}
 				if (EditorGUI.EndChangeCheck())
 				{
@@ -172,7 +172,7 @@ namespace Fright.Editor.References
 						BuildReplaceRegex();
 					}
 
-					Query.ReferencingPaths = null;
+					Query.ReferencingPaths = new List<string>();
 					BuildFindRegex();
 				}
 
@@ -225,7 +225,7 @@ namespace Fright.Editor.References
 
 		private void DrawSettings()
 		{
-			var extensionsToSearch = SerializedObject.FindProperty(nameof(Settings));
+			var extensionsToSearch = SerializedObject!.FindProperty(nameof(Settings));
 			EditorGUILayout.PropertyField(extensionsToSearch);
 
 			EditorGUILayout.Space();
@@ -256,7 +256,7 @@ namespace Fright.Editor.References
 				return;
 			}
 
-			RegexToReplace = AssetDatabase.IsMainAsset(ObjectToReplace) ? ReferenceQuery.RegexForAsset(ObjectToReplace) : ReferenceQuery.RegexForSubAsset(ObjectToReplace);
+			RegexToReplace = AssetDatabase.IsMainAsset(ObjectToReplace) ? ReferenceQuery.RegexForAsset(ObjectToReplace!) : ReferenceQuery.RegexForSubAsset(ObjectToReplace!);
 		}
 
 		private void DrawSearchPanel()

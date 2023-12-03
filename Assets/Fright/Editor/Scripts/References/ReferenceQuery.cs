@@ -39,15 +39,15 @@ namespace Fright.Editor.References
 		private const string PROG_BAR_TITLE_FINDING = "Finding References";
 
 		//Inputs
-		public QueryWindowSettings Settings;
+		public QueryWindowSettings Settings = new QueryWindowSettings();
 
 		//Outputs
-		public List<string> ReferencingPaths = null;
+		public List<string> ReferencingPaths = new List<string>();
 		
 		/// Finds all the references to the object using the default object regex
 		public void FindReferences(Object objectToFind) => FindReferences(AssetDatabase.IsMainAsset(objectToFind) ? RegexForAsset(objectToFind) : RegexForSubAsset(objectToFind));
 		/// Finds all the references to the objects using the default object regex
-		public void FindReferences(IList<Object> objectsToFind) => FindReferences(RegexForAssets(objectsToFind));
+		public void FindReferences(IList<Object?> objectsToFind) => FindReferences(RegexForAssets(objectsToFind));
 
 		/// Finds all the references to the object using the provided regex
 		public void FindReferences(string regex)
@@ -99,7 +99,7 @@ namespace Fright.Editor.References
 			{
 				EditorUtility.ClearProgressBar();
 				AssetDatabase.Refresh();
-				ReferencingPaths = null;
+				ReferencingPaths = new List<string>();
 			}
 		}
 
@@ -153,27 +153,27 @@ namespace Fright.Editor.References
 			return RegexForAsset(obj);
 		}
 
-		public static string RegexForAssets(IList<Object> objects)
+		public static string RegexForAssets(IList<Object?> objects)
 		{
-			string allAssetsRegex = "";
+			string allAssetsRegex = string.Empty;
 
 			//Aggregate all of the regexes for each asset to find
 			for(int i = 0; i < objects.Count; ++i)
 			{
-				Object obj = objects[i];
+				Object? obj = objects[i];
 
-				if (obj)
+				if (!obj)
+					continue;
+
+				string singleAssetRegex = AssetDatabase.IsMainAsset(obj!) ? RegexForAsset(obj!) : RegexForSubAsset(obj!);
+
+				if (allAssetsRegex.Length == 0)
 				{
-					string singleAssetRegex = AssetDatabase.IsMainAsset(obj) ? RegexForAsset(obj) : RegexForSubAsset(obj);
-
-					if (allAssetsRegex.Length == 0)
-					{
-						allAssetsRegex = $"({singleAssetRegex})";
-					}
-					else
-					{
-						allAssetsRegex += $"|({singleAssetRegex})";
-					}
+					allAssetsRegex = $"({singleAssetRegex})";
+				}
+				else
+				{
+					allAssetsRegex += $"|({singleAssetRegex})";
 				}
 			}
 
