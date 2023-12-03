@@ -24,34 +24,39 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using Codice.Client.BaseCommands;
 
 namespace Fright.Editor.References
 {
 	public class ReferenceWindow : EditorWindow
 	{
 		public const string WARNING_MULTIPLE_REPLACE = "You're replacing references to multiple assets with a single reference.";
+		public const string WARNING_RESET_TITLE = "Reset Settings";
+		public const string WARNING_RESET_BODY = "Are you sure you want to reset your settings to their default value?";
+		public const string WARNING_EXTENSIONS_TIME = "Changing the extensions searched will affect how long the search operation takes.";
 
-		public List<Object> objectsToFind = new List<Object>() { null };
-		public Object objectToReplace;
-		public string regexToFind;
-		public string regexToReplace;
-		public Vector2 scrollPosition;
-		public bool enableReplace = true;
-		public int currentTabView = (int)Tab.asset;
+		public List<Object> ObjectsToFind = new List<Object>() { null };
+		public Object ObjectToReplace;
+		public string RegexToFind;
+		public string RegexToReplace;
+		public Vector2 ScrollPosition;
+		public Tab CurrentTabView = Tab.Asset;
 
-		[SerializeField] private ReferenceQuery query = new ReferenceQuery();
-		private SerializedObject serializedObject = null;
+		[SerializeField] private ReferenceQuery Query = new ReferenceQuery();
+		[SerializeField] private QueryWindowSettings Settings = new QueryWindowSettings();
+		private SerializedObject SerializedObject = null;
 
-		public int searchableAssets
+		public int SearchableAssets
 		{
 			get
 			{
 				int result = 0;
 
-				foreach(var asset in objectsToFind)
+				foreach(var asset in ObjectsToFind)
 				{
-					if (asset) ++result;
+					if (asset)
+					{
+						++result;
+					}
 				}
 
 				return result;
@@ -69,9 +74,9 @@ namespace Fright.Editor.References
 		{
 			var window = GetWindow<ReferenceWindow>(true, "References");
 			window.ShowUtility();
-			window.objectsToFind = new List<Object>(Selection.objects);
+			window.ObjectsToFind = new List<Object>(Selection.objects);
 			
-			if (window.objectsToFind.Count > 0)
+			if (window.ObjectsToFind.Count > 0)
 			{
 				window.BuildFindRegex();
 				window.StartSearch();
@@ -80,40 +85,47 @@ namespace Fright.Editor.References
 
 		private void OnEnable()
 		{
-			serializedObject = new SerializedObject(this);
+			SerializedObject = new SerializedObject(this);
+			Settings = QueryWindowSettings.LoadFromEditorPrefs();
+			Query.Settings = Settings;
 			BuildFindRegex();
+		}
+
+		private void OnDisable()
+		{
+			Settings.SaveToEditorPrefs();
 		}
 
 		public void OnGUI()
 		{
 			titleContent.text = "References";
-			serializedObject.UpdateIfRequiredOrScript();
+			SerializedObject.UpdateIfRequiredOrScript();
 
 			DrawToolbar();
 
-			scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+			ScrollPosition = EditorGUILayout.BeginScrollView(ScrollPosition);
 			{
-				switch((Tab)currentTabView)
+				switch(CurrentTabView)
 				{
-					case Tab.asset:
+					case Tab.Asset:
 						DrawObjectToSelect();
 						DrawSearchPanel();
 						DrawReferences();
 						break;
 
-					case Tab.regex:
+					case Tab.Regex:
 						DrawRegex();
 						DrawSearchPanel();
 						DrawReferences();
 						break;
 
-					case Tab.settings:
+					case Tab.Settings:
 						DrawSettings();
 						break;
 				}
 			}
 			EditorGUILayout.EndScrollView();
-			serializedObject.ApplyModifiedProperties();
+			SerializedObject.ApplyModifiedProperties();
 		}
 
 		private void DrawToolbar()
@@ -122,17 +134,17 @@ namespace Fright.Editor.References
 			{
 				if (GUILayout.Button("Find Asset(s)", EditorStyles.toolbarButton))
 				{
-					currentTabView = (int)Tab.asset;
+					CurrentTabView = Tab.Asset;
 				}
 
 				if (GUILayout.Button("Find Regex", EditorStyles.toolbarButton))
 				{
-					currentTabView = (int)Tab.regex;
+					CurrentTabView = Tab.Regex;
 				}
 
 				if (GUILayout.Button(EditorGUIUtility.IconContent("_Popup@2x"), EditorStyles.toolbarButton, GUILayout.Width(40.0f)))
 				{
-					currentTabView = (int)Tab.settings;
+					CurrentTabView = Tab.Settings;
 				}
 			}
 			EditorGUILayout.EndHorizontal();
@@ -148,28 +160,28 @@ namespace Fright.Editor.References
 				//Draw the find objects selector
 				EditorGUI.BeginChangeCheck();
 				{
-					EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(objectsToFind)), true);
+					EditorGUILayout.PropertyField(SerializedObject.FindProperty(nameof(ObjectsToFind)), true);
 				}
 				if (EditorGUI.EndChangeCheck())
 				{
-					serializedObject.ApplyModifiedProperties();
+					SerializedObject.ApplyModifiedProperties();
 
-					if (searchableAssets > 1)
+					if (SearchableAssets > 1)
 					{
-						objectToReplace = null;
+						ObjectToReplace = null;
 						BuildReplaceRegex();
 					}
 
-					query.referencingPaths = null;
+					Query.ReferencingPaths = null;
 					BuildFindRegex();
 				}
 
 				//Draw the replace object selector
-				if (enableReplace)
+				if (Settings.ShouldAllowReplace)
 				{
 					EditorGUI.BeginChangeCheck();
 					{
-						objectToReplace = EditorGUILayout.ObjectField("Object To Replace", objectToReplace, typeof(Object), false);
+						ObjectToReplace = EditorGUILayout.ObjectField("Object To Replace", ObjectToReplace, typeof(Object), false);
 					}
 					if (EditorGUI.EndChangeCheck())
 					{
@@ -179,14 +191,14 @@ namespace Fright.Editor.References
 					EditorGUILayout.Space();
 
 					//Draw the multiple object replace warning
-					if (searchableAssets >= 2 && !string.IsNullOrEmpty(regexToReplace))
+					if (SearchableAssets >= 2 && !string.IsNullOrEmpty(RegexToReplace))
 					{
 						EditorGUILayout.HelpBox(WARNING_MULTIPLE_REPLACE, MessageType.Warning);
 					}
 				}
 				
 				//Draw the call to action
-				if (searchableAssets == 0)
+				if (SearchableAssets == 0)
 				{
 					EditorGUILayout.LabelField("Pick an asset to get started");
 				}
@@ -201,11 +213,11 @@ namespace Fright.Editor.References
 				EditorGUILayout.LabelField("Find with regular expression", EditorStyles.boldLabel);
 				EditorGUILayout.Space();
 
-				regexToFind = EditorGUILayout.TextField("Find Regex", regexToFind);
+				RegexToFind = EditorGUILayout.TextField("Find Regex", RegexToFind);
 
-				if (enableReplace)
+				if (Settings.ShouldAllowReplace)
 				{
-					regexToReplace = EditorGUILayout.TextField("Replace Regex", regexToReplace);
+					RegexToReplace = EditorGUILayout.TextField("Replace Regex", RegexToReplace);
 				}
 			}
 			EditorGUILayout.EndVertical();
@@ -213,55 +225,57 @@ namespace Fright.Editor.References
 
 		private void DrawSettings()
 		{
-			EditorGUILayout.Space();
-			enableReplace = EditorGUILayout.Toggle("Enable Replace", enableReplace);
-			
-			EditorGUILayout.Space();
-			EditorGUILayout.HelpBox("Changing the extensions searched will affect how long the search operation takes.", MessageType.Warning);
-			var extensionsToSearch = serializedObject.FindProperty("query").FindPropertyRelative(nameof(ReferenceQuery.extensionsToSearch));
+			var extensionsToSearch = SerializedObject.FindProperty(nameof(Settings));
 			EditorGUILayout.PropertyField(extensionsToSearch);
+
+			EditorGUILayout.Space();
+			if (GUILayout.Button("Reset Settings To Default") && EditorUtility.DisplayDialog(WARNING_RESET_TITLE, WARNING_RESET_BODY, "Yes", "No"))
+			{
+				Settings = new QueryWindowSettings();
+				Query.Settings = Settings;
+			}
 		}
 
 		private void BuildFindRegex()
 		{
-			if (searchableAssets > 0)
+			if (SearchableAssets > 0)
 			{
-				regexToFind = ReferenceQuery.RegexForAssets(objectsToFind);
+				RegexToFind = ReferenceQuery.RegexForAssets(ObjectsToFind);
 			}
 			else
 			{
-				regexToFind = "";
+				RegexToFind = "";
 			}
 		}
 
 		private void BuildReplaceRegex()
 		{
-			if (!objectToReplace)
+			if (!ObjectToReplace)
 			{
-				regexToReplace = string.Empty;
+				RegexToReplace = string.Empty;
 				return;
 			}
 
-			regexToReplace = AssetDatabase.IsMainAsset(objectToReplace) ? ReferenceQuery.RegexForAsset(objectToReplace) : ReferenceQuery.RegexForSubAsset(objectToReplace);
+			RegexToReplace = AssetDatabase.IsMainAsset(ObjectToReplace) ? ReferenceQuery.RegexForAsset(ObjectToReplace) : ReferenceQuery.RegexForSubAsset(ObjectToReplace);
 		}
 
 		private void DrawSearchPanel()
 		{
-			GUI.enabled = !string.IsNullOrEmpty(regexToFind);
+			GUI.enabled = !string.IsNullOrEmpty(RegexToFind);
 			EditorGUILayout.BeginHorizontal();
 
-			if (enableReplace)
+			if (Settings.ShouldAllowReplace)
 			{
 				if (GUILayout.Button("Find", EditorStyles.miniButtonLeft))
 				{
 					StartSearch();
 				}
 
-				GUI.enabled &= query.referencingPaths?.Count > 0 && !string.IsNullOrEmpty(regexToReplace);
+				GUI.enabled &= Query.ReferencingPaths?.Count > 0 && !string.IsNullOrEmpty(RegexToReplace);
 
 				if (GUILayout.Button("Replace", EditorStyles.miniButtonRight) && PromptReplace())
 				{
-					query.ReplaceReferences(regexToFind, regexToReplace);
+					Query.ReplaceReferences(RegexToFind, RegexToReplace);
 				}
 			}
 			else
@@ -278,18 +292,18 @@ namespace Fright.Editor.References
 
 		private void StartSearch()
 		{
-			query.FindReferences(regexToFind);
+			Query.FindReferences(RegexToFind);
 		}
 
 		private void DrawReferences()
 		{
-			if (query?.referencingPaths != null)
+			if (Query?.ReferencingPaths != null)
 			{
 				EditorGUILayout.BeginVertical("box");
 				{
 					EditorGUILayout.LabelField("References", EditorStyles.boldLabel);
 
-					if (query.referencingPaths.Count == 0)
+					if (Query.ReferencingPaths.Count == 0)
 					{
 						EditorGUILayout.LabelField("No references");
 					}
@@ -297,7 +311,7 @@ namespace Fright.Editor.References
 					{
 						var currentDirectory = new System.Uri(System.Environment.CurrentDirectory + "/Assets");
 
-						foreach(var path in query.referencingPaths)
+						foreach(var path in Query.ReferencingPaths)
 						{
 							EditorGUILayout.BeginHorizontal();
 							{
@@ -327,9 +341,9 @@ namespace Fright.Editor.References
 		#region Embedded Types
 		public enum Tab
 		{
-			asset = 0,
-			regex = 1,
-			settings = 2,
+			Asset = 0,
+			Regex = 1,
+			Settings = 2,
 		}
 		#endregion
 	}
