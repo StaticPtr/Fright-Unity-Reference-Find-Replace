@@ -11,7 +11,7 @@ The purpose of this tool is to make it clearer where in your project any particu
 | ![Reference Window Asset Panel Preview](https://github.com/StaticPtr/Fright-Unity-Reference-Find-Replace/blob/master/Readme%20Assets/ReferencesWindow-Assets.png?raw=true) | ![Reference Window Regular Expression Panel Preview](https://github.com/StaticPtr/Fright-Unity-Reference-Find-Replace/blob/master/Readme%20Assets/ReferencesWindow-Regex.png?raw=true) | ![Reference Window Settings Panel Preview](https://github.com/StaticPtr/Fright-Unity-Reference-Find-Replace/blob/master/Readme%20Assets/ReferencesWindow-Settings.png?raw=true) |
 
 ## Setup
-Download the [latest .unitypackage](https://github.com/StaticPtr/Fright-Unity-Reference-Find-Replace/releases/download/v1.4.0/Fright.Find.and.Replace.v1.4.0.unitypackage) and import it into your project
+Download the [latest .unitypackage](https://github.com/StaticPtr/Fright-Unity-Reference-Find-Replace/releases/download/v1.5.0/Fright.Find.and.Replace.v1.5.0.unitypackage) and import it into your project
 
 ## Usage
 ### Searching your project
