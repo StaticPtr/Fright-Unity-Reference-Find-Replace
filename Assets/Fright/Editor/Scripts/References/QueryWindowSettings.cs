@@ -12,7 +12,7 @@ namespace Fright.Editor.References
 		public const string EDITOR_PREFS_KEY = "QueryWindowSettings";
 
 		public bool ShouldAllowReplace = true;
-		public string RootFolderToSearch = "Assets";
+		[HideInInspector] public string RootFolderToSearch = "Assets";
 		public List<string> ExtensionsToSearch = new List<string>()
 		{
 			".prefab",

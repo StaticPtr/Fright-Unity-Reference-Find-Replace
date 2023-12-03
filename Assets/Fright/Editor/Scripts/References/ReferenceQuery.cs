@@ -82,17 +82,15 @@ namespace Fright.Editor.References
 				{
 					string path = ReferencingPaths[i];
 
-					if (!EditorUtility.DisplayCancelableProgressBar(PROG_BAR_TITLE_FINDING, path, (float)i / (float)ReferencingPaths.Count))
-					{
-						string text = File.ReadAllText(path);
-						text = searchRegex.Replace(text, replacement);
-						File.WriteAllText(path, text);
-					}
-					else
+					if (EditorUtility.DisplayCancelableProgressBar(PROG_BAR_TITLE_FINDING, path, (float)i / (float)ReferencingPaths.Count))
 					{
 						Debug.LogError("[ReferenceQuery] Request cancelled by user");
 						break;
 					}
+
+					string text = File.ReadAllText(path);
+					text = searchRegex.Replace(text, replacement);
+					File.WriteAllText(path, text);
 				}
 			}
 			finally
@@ -118,25 +116,23 @@ namespace Fright.Editor.References
 
 		private IEnumerable<string> RegexFiles(List<FileInfo> filesToSearch, Regex regex)
 		{
-			for(int i = 0; i < filesToSearch.Count; ++i)
+			for (int i = 0; i < filesToSearch.Count; ++i)
 			{
 				var file = filesToSearch[i];
 				string path = file.FullName;
 
-				if (!EditorUtility.DisplayCancelableProgressBar(PROG_BAR_TITLE_FINDING, path, (float)i / (float)filesToSearch.Count))
-				{
-					string text = File.ReadAllText(path);
-					bool isMatch = regex.IsMatch(text);
-					
-					if (isMatch)
-					{
-						yield return path;
-					}
-				}
-				else
+				if (EditorUtility.DisplayCancelableProgressBar(PROG_BAR_TITLE_FINDING, path, (float)i / (float)filesToSearch.Count))
 				{
 					Debug.LogError("[ReferenceQuery] Request cancelled by user");
 					break;
+				}
+
+				string text = File.ReadAllText(path);
+				bool isMatch = regex.IsMatch(text);
+				
+				if (isMatch)
+				{
+					yield return path;
 				}
 			}
 		}

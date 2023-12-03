@@ -45,13 +45,13 @@ namespace Fright.Editor.References
 		[SerializeField] private QueryWindowSettings Settings = new QueryWindowSettings();
 		private SerializedObject? SerializedObject = null;
 
-		public int SearchableAssets
+		public int CountSearchableAssets
 		{
 			get
 			{
 				int result = 0;
 
-				foreach(var asset in ObjectsToFind)
+				foreach (var asset in ObjectsToFind)
 				{
 					if (asset)
 					{
@@ -164,46 +164,56 @@ namespace Fright.Editor.References
 				}
 				if (EditorGUI.EndChangeCheck())
 				{
-					SerializedObject.ApplyModifiedProperties();
-
-					if (SearchableAssets > 1)
-					{
-						ObjectToReplace = null;
-						BuildReplaceRegex();
-					}
-
-					Query.ReferencingPaths = new List<string>();
-					BuildFindRegex();
+					OnChangedObjectsToSelect();
 				}
 
 				//Draw the replace object selector
 				if (Settings.ShouldAllowReplace)
 				{
-					EditorGUI.BeginChangeCheck();
-					{
-						ObjectToReplace = EditorGUILayout.ObjectField("Object To Replace", ObjectToReplace, typeof(Object), false);
-					}
-					if (EditorGUI.EndChangeCheck())
-					{
-						BuildReplaceRegex();
-					}
-
-					EditorGUILayout.Space();
-
-					//Draw the multiple object replace warning
-					if (SearchableAssets >= 2 && !string.IsNullOrEmpty(RegexToReplace))
-					{
-						EditorGUILayout.HelpBox(WARNING_MULTIPLE_REPLACE, MessageType.Warning);
-					}
+					DrawObjectToReplace();
 				}
 				
 				//Draw the call to action
-				if (SearchableAssets == 0)
+				if (CountSearchableAssets == 0)
 				{
 					EditorGUILayout.LabelField("Pick an asset to get started");
 				}
 			}
 			EditorGUILayout.EndVertical();
+		}
+
+		private void OnChangedObjectsToSelect()
+		{
+			SerializedObject!.ApplyModifiedProperties();
+
+			if (CountSearchableAssets > 1)
+			{
+				ObjectToReplace = null;
+				BuildReplaceRegex();
+			}
+
+			Query.ReferencingPaths = new List<string>();
+			BuildFindRegex();
+		}
+
+		private void DrawObjectToReplace()
+		{
+			EditorGUI.BeginChangeCheck();
+			{
+				ObjectToReplace = EditorGUILayout.ObjectField("Object To Replace", ObjectToReplace, typeof(Object), false);
+			}
+			if (EditorGUI.EndChangeCheck())
+			{
+				BuildReplaceRegex();
+			}
+
+			EditorGUILayout.Space();
+
+			//Draw the multiple object replace warning
+			if (CountSearchableAssets >= 2 && !string.IsNullOrEmpty(RegexToReplace))
+			{
+				EditorGUILayout.HelpBox(WARNING_MULTIPLE_REPLACE, MessageType.Warning);
+			}
 		}
 
 		private void DrawRegex()
@@ -238,13 +248,13 @@ namespace Fright.Editor.References
 
 		private void BuildFindRegex()
 		{
-			if (SearchableAssets > 0)
+			if (CountSearchableAssets > 0)
 			{
 				RegexToFind = ReferenceQuery.RegexForAssets(ObjectsToFind);
 			}
 			else
 			{
-				RegexToFind = "";
+				RegexToFind = string.Empty;
 			}
 		}
 
