@@ -29,6 +29,7 @@ namespace Fright.Editor.References
 {
 	public class ReferenceWindow : EditorWindow
 	{
+		public const string WINDOW_TITLE = "Find & Replace";
 		public const string WARNING_MULTIPLE_REPLACE = "You're replacing references to multiple assets with a single reference.";
 		public const string WARNING_RESET_TITLE = "Reset Settings";
 		public const string WARNING_RESET_BODY = "Are you sure you want to reset your settings to their default value?";
@@ -63,8 +64,8 @@ namespace Fright.Editor.References
 			}
 		}
 		
-		[MenuItem("Window/Asset References")]
-		public static void OpenWindow() => GetWindow<ReferenceWindow>(true, "References").ShowUtility();
+		[MenuItem("Window/Find And Replace")]
+		public static void OpenWindow() => GetWindow<ReferenceWindow>(true, WINDOW_TITLE).ShowUtility();
 
 		[MenuItem("Assets/Find References", true)]
 		public static bool CanOpenWindowWithSelectedObject() => (bool)Selection.activeObject;
@@ -72,7 +73,7 @@ namespace Fright.Editor.References
 		[MenuItem("Assets/Find References")]
 		public static void OpenWindowWithSelectedObject()
 		{
-			var window = GetWindow<ReferenceWindow>(true, "References");
+			var window = GetWindow<ReferenceWindow>(true, WINDOW_TITLE);
 			window.ShowUtility();
 			window.ObjectsToFind = new List<Object?>(Selection.objects);
 			

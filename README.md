@@ -1,4 +1,4 @@
-# Fright: Unity Asset Reference Find & Replace
+# Fright: Unity Find & Replace
 Quickly search your Unity project for nearly anything.
 
 Originally designed as a tool to find asset references within your project, this project has increased in scope to search your project for nearly anything, and perform replacements to those searches.
@@ -15,7 +15,7 @@ Download the [latest .unitypackage](https://github.com/StaticPtr/Fright-Unity-Re
 
 ## Usage
 ### Searching your project
-1) Open the References window by clicking on the `Window/Asset References` menu item
+1) Open the References window by clicking on the `Window/Find And Replace` menu item
 ![Reference Window Preview](https://github.com/StaticPtr/Fright-Unity-Reference-Find-Replace/blob/master/Readme%20Assets/HowTo-MainMenu.png?raw=true)
 2) Pick an asset to search for, or enter a regular expression in the Regex panel
 3) Click on the **Find** button to start scanning your project. _Please note that this may take a couple minutes depending on the size of your project, and the speed of your storage._
